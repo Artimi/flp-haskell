@@ -1,5 +1,6 @@
 import System.IO
 import System.Environment
+import Data.List
 
 splitWhen :: (Char -> Bool) -> [Char] -> [[Char]]
 splitWhen p s = case dropWhile p s of
@@ -15,9 +16,17 @@ getFormula file = do
     let formula = map (splitOn ',') (lines contents)
     return formula
 
+variables :: [[String]] -> [String]
+variables formula = nub $ map (dropWhile (== '-')) $ concat formula
+
+{-getTruthTable :: [[String]] -> String-}
+{-getTruthTable formula = show getVariables formula-}
+
 processCommand :: String -> [[String]] -> String
 processCommand command formula
     | command == "-i" = show formula
+    | command == "-v" = show $ variables formula
+    {-| command == "-t" = getTruthTable formula-}
     | otherwise = "Unknown command: " ++ command
 
 main = do
