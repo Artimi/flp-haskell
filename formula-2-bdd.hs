@@ -15,28 +15,13 @@ getFormula file = do
     let formula = map (splitOn ',') (lines contents)
     return formula
 
-    {-withFile file ReadMode (\ handle -> do-}
-    {-contents <- hGetContents handle-}
-    {-formula <- map (splitOn ',') (lines contents)-}
-    {-return formula-}
-    {-)-}
-
-    {-handle <- openFile file ReadMode-}
-    {-formula <-gf handle []-}
-    {-hClose handle-}
-    {-return formula-}
-    {-where-}
-        {-gf handle l = do-}
-            {-eof <- hIsEOF handle-}
-            {-if eof-}
-                {-then return l-}
-                {-else do-}
-                    {-line <- hGetLine handle-}
-                    {-gf handle (l ++ (splitOn ',' line))-}
+processCommand :: String -> [[String]] -> String
+processCommand command formula
+    | command == "-i" = show formula
+    | otherwise = "Unknown command: " ++ command
 
 main = do
-    args <- getArgs
-    let comm = head args
-        file = args !! 1
+    [command, file] <- getArgs
     formula <- getFormula file
-    print formula
+    let result = processCommand command formula
+    putStrLn result
