@@ -11,18 +11,21 @@ splitWhen p s = case dropWhile p s of
 splitOn :: Char -> [Char] -> [[Char]]
 splitOn d = splitWhen ( == d)
 
+type Formula = [[String]]
+
+getFormula :: FilePath -> IO Formula
 getFormula file = do
     contents <- readFile file
     let formula = map (splitOn ',') (lines contents)
     return formula
 
-variables :: [[String]] -> [String]
+variables :: Formula -> [String]
 variables formula = nub $ map (dropWhile (== '-')) $ concat formula
 
 {-getTruthTable :: [[String]] -> String-}
 {-getTruthTable formula = show getVariables formula-}
 
-processCommand :: String -> [[String]] -> String
+processCommand :: String -> Formula -> String
 processCommand command formula
     | command == "-i" = show formula
     | command == "-v" = show $ variables formula
