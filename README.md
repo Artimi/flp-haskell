@@ -35,13 +35,11 @@ Print BDD/ROBDD
 BDD is printed according to format from specification thus:
 ```
 a->0
-a=>b
-b->0
-b=>1
+a=>b->0
+a=>b=>1
 ```
 For ROBDD where `a` leads via `low` to 0, via `high` to `b` and `b` lead via `low` to
-0 and via `high` to 1. Print of BDD is in inorder. If is whole BDD reduced to 0 or 1
-is printed out only this value.
+0 and via `high` to 1. If is whole BDD reduced to 0 or 1 is printed out only this value.
 
 Tests
 -----

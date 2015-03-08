@@ -79,15 +79,14 @@ getValue :: BDD String -> String
 getValue (Node x _ _) = x
 getValue (Leaf b) = show $ fromEnum b
 
+-- | Get paths of BDD to leafs
+getPaths :: BDD String -> String -> String
+getPaths (Node x l r) prefix = (let prefixl = prefix ++ x ++ "->"; prefixr = prefix ++ x ++ "=>" in  (getPaths l prefixl) ++ (getPaths r prefixr))
+getPaths (Leaf b) prefix = prefix ++ (show $ fromEnum b) ++ "\n"
+
 -- | return representation of BDD, if empty return only bool value
 showBDD :: BDD String -> String
-showBDD (Node x l r) = showBDD' (Node x l r)
-showBDD (Leaf b) = showBDD'' (Leaf b)
-
-showBDD' (Node x l r) = x ++ "->" ++ (getValue l) ++ "\n" ++ x ++ "=>" ++ (getValue r) ++ "\n" ++ (showBDD' l) ++ (showBDD' r)
-showBDD' (Leaf b) = ""
-
-showBDD'' (Leaf b) = (show $ fromEnum b) ++ "\n"
+showBDD bdd = getPaths bdd ""
 
 -- | Tests whether BDD is equivalent to truthtables in order of variables
 equivalent :: BDD String -> TruthTable -> [String] -> Bool
