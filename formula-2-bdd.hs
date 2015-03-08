@@ -2,10 +2,10 @@
 -- author: Petr Šebek
 -- login: xsebek02
 
-
 import System.IO
 import System.Environment
 import Data.List
+
 -- | split String when satisfied predicate
 splitWhen :: (Char -> Bool) -> String -> [String]
 splitWhen p s = case dropWhile p s of
@@ -32,9 +32,9 @@ getVariables :: Formula -> [String]
 getVariables formula = nub $ map (dropWhile (== '-')) $ concat formula
 
 -- | whether clause is satisfied with given values
-isSatisfied :: [String] -> [Int] -> [String] -> Bool
+isSatisfied :: [String] -> [Bool] -> [String] -> Bool
 isSatisfied variables values clause = all (`elem` valuesClause) clause
-    where valuesClause = map (\ x -> if fst x == 0 then "-" ++ snd x else snd x) (zip values variables)
+    where valuesClause = map (\ x -> if fst x == False then "-" ++ snd x else snd x) (zip values variables)
 
 -- | convert True to 1, False to 0
 boolToInt :: Bool -> Int
@@ -43,18 +43,18 @@ boolToInt bool = if bool then 1 else 0
 intToBool :: Int -> Bool
 intToBool int = if int == 0 then False else True
 
-type TruthTable = [[Int]]
+type TruthTable = [[Bool]]
 
 -- | retun String representing table
 showTable :: TruthTable-> String
-showTable table = unlines [ unwords [ show x | x <- xs] | xs <- table ]
+showTable table = unlines [ unwords [ show $ boolToInt x | x <- xs] | xs <- table ]
 
 -- | creates truth table according to formula
 getTruthTable :: Formula -> TruthTable
 getTruthTable formula =
     let variables = getVariables formula
-        truthValues = sequence $ replicate (length variables) [0, 1]
-    in [values ++ [(boolToInt $ any (isSatisfied variables values) formula)] | values <-truthValues ]
+        truthValues = sequence $ replicate (length variables) [False, True]
+    in [values ++ [ any (isSatisfied variables values) formula] | values <- truthValues ]
 
 -- | check formula
 check :: Formula -> Bool
@@ -86,17 +86,17 @@ reduceBDD (Node x l r)
     | l /= r = (Node x (reduceBDD l) (reduceBDD r))
 reduceBDD self@(Leaf b) = self
 
--- | Set leaf under path [Int] of bdd to new_value
-setLeaf :: [Int] -> BDD a -> Bool -> BDD a
-setLeaf (0:ds) (Node x l r) new_value = Node x (setLeaf ds l new_value) r
-setLeaf (1:ds) (Node x l r) new_value = Node x l (setLeaf ds r new_value)
+-- | Set leaf under path [Bool] of bdd to new_value
+setLeaf :: [Bool] -> BDD a -> Bool -> BDD a
+setLeaf (False:ds) (Node x l r) new_value = Node x (setLeaf ds l new_value) r
+setLeaf (True:ds) (Node x l r) new_value = Node x l (setLeaf ds r new_value)
 setLeaf [] (Leaf b) new_value = Leaf new_value
 setLeaf [] (Node _ _ _) _ = error "You are not in a leaf!"
 
 -- | Get value of leaf under path given by (variable, value)
-getLeaf :: [(String, Int)] -> BDD String -> Bool
+getLeaf :: [(String, Bool)] -> BDD String -> Bool
 getLeaf (d:ds) (Node x l r) = if (fst d) == x
-    then if (snd d) == 0
+    then if (snd d) == False
         then getLeaf ds l
         else getLeaf ds r
     else getLeaf ds (Node x l r)
@@ -105,7 +105,7 @@ getLeaf [] (Leaf b) = b
 getLeaf [] (Node _ _ _) = error "You are not in a leaf!"
 
 equivalent :: BDD String -> TruthTable -> [String] -> Bool
-equivalent  bdd tt variables = all (==True) [(intToBool $ last x) == (getLeaf (zip variables (init x)) bdd) | x <-tt]
+equivalent  bdd tt variables = all (==True) [(last x) == (getLeaf (zip variables (init x)) bdd) | x <-tt]
 
 -- | Creates BDD from list of variables with leaves equal empty
 buildBDD :: [String] -> BDD String
@@ -114,7 +114,7 @@ buildBDD (x:xs) = Node x (buildBDD xs) (buildBDD xs)
 
 -- | Set BDD leaves value proper according to truthTable
 evaluateBDD :: BDD a -> TruthTable -> BDD a
-evaluateBDD bdd truthTable = foldl (\t values -> setLeaf (init values) t (intToBool (last values))) bdd truthTable
+evaluateBDD bdd truthTable = foldl (\t values -> setLeaf (init values) t (last values)) bdd truthTable
 
 -- | Return BDD made from formula
 getBDD :: Formula -> BDD String
