@@ -51,6 +51,14 @@ getTruthTable formula =
         truthValues = sequence $ replicate (length variables) [0, 1]
     in [values ++ [(boolToInt $ any (isSatisfied variables values) formula)] | values <-truthValues ]
 
+-- | check formula
+check :: Formula -> Bool
+check formula = equivalent bdd tt variables && equivalent rbdd tt variables
+    where bdd = getBDD formula
+          rbdd = reduceBDD bdd
+          tt = getTruthTable formula
+          variables = getVariables formula
+
 -- | runs command on formula
 processCommand :: String -> Formula -> String
 processCommand command formula
@@ -59,6 +67,7 @@ processCommand command formula
     | command == "-b" = showBDD $ getBDD formula
     | command == "-t" = unwords (getVariables formula) ++ "\n" ++ (showTable $ getTruthTable formula)
     | command == "-r" = showBDD $  reduceBDD $ getBDD formula
+    | command == "-c" = show $ check formula
     | otherwise = "Unknown command: " ++ command
 
 
@@ -78,6 +87,20 @@ setLeaf (0:ds) (Node x l r) new_value = Node x (setLeaf ds l new_value) r
 setLeaf (1:ds) (Node x l r) new_value = Node x l (setLeaf ds r new_value)
 setLeaf [] (Leaf b) new_value = Leaf new_value
 setLeaf [] (Node _ _ _) _ = error "You are not in a leaf!"
+
+-- | Get value of leaf under path given by (variable, value)
+getLeaf :: [(String, Int)] -> BDD String -> Bool
+getLeaf (d:ds) (Node x l r) = if (fst d) == x
+    then if (snd d) == 0
+        then getLeaf ds l
+        else getLeaf ds r
+    else getLeaf ds (Node x l r)
+getLeaf (_:_) (Leaf b) = b
+getLeaf [] (Leaf b) = b
+getLeaf [] (Node _ _ _) = error "You are not in a leaf!"
+
+equivalent :: BDD String -> TruthTable -> [String] -> Bool
+equivalent  bdd tt variables = all (==True) [(intToBool $ last x) == (getLeaf (zip variables (init x)) bdd) | x <-tt]
 
 -- | Creates BDD from list of variables with leaves equal empty
 buildBDD :: [String] -> BDD String
@@ -101,13 +124,18 @@ getValue :: BDD String -> String
 getValue (Node x _ _) = x
 getValue (Leaf b) = show $ boolToInt b
 
--- | return representation of BDD
+-- | return representation of BDD, if empty return only bool value
 showBDD :: BDD String -> String
-showBDD (Node x l r) = x ++ "->" ++ (getValue l) ++ "\n" ++ x ++ "=>" ++ (getValue r) ++ "\n" ++ (showBDD l) ++ (showBDD r)
-showBDD (Leaf b) = ""
+showBDD (Node x l r) = showBDD' (Node x l r)
+showBDD (Leaf b) = showBDD'' (Leaf b)
+
+showBDD' (Node x l r) = x ++ "->" ++ (getValue l) ++ "\n" ++ x ++ "=>" ++ (getValue r) ++ "\n" ++ (showBDD' l) ++ (showBDD' r)
+showBDD' (Leaf b) = ""
+
+showBDD'' (Leaf b) = show $ boolToInt b
 
 main = do
     [command, file] <- getArgs
     formula <- getFormula file
     let result = processCommand command formula
-    putStrLn result
+    putStr result
