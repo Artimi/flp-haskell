@@ -1,0 +1,14 @@
+proměnná1->proměnná2
+proměnná1=>proměnná3
+proměnná2->proměnná3
+proměnná2=>L_1
+proměnná3->L_1
+proměnná3=>1
+L_1->1
+L_1=>0
+L_1->1
+L_1=>0
+proměnná3->L_1
+proměnná3=>1
+L_1->1
+L_1=>0

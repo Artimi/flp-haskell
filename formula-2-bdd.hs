@@ -1,3 +1,8 @@
+-- project: formula-2-bdd
+-- author: Petr Šebek
+-- login: xsebek02
+
+
 import System.IO
 import System.Environment
 import Data.List
@@ -62,12 +67,12 @@ check formula = equivalent bdd tt variables && equivalent rbdd tt variables
 -- | runs command on formula
 processCommand :: String -> Formula -> String
 processCommand command formula
-    | command == "-i" = show formula
-    | command == "-v" = show $ getVariables formula
+    | command == "-i" = (show formula) ++ "\n"
+    | command == "-v" = (show $ getVariables formula) ++ "\n"
     | command == "-b" = showBDD $ getBDD formula
     | command == "-t" = unwords (getVariables formula) ++ "\n" ++ (showTable $ getTruthTable formula)
     | command == "-r" = showBDD $  reduceBDD $ getBDD formula
-    | command == "-c" = show $ check formula
+    | command == "-c" = (show $ check formula) ++ "\n"
     | otherwise = "Unknown command: " ++ command
 
 
@@ -132,7 +137,7 @@ showBDD (Leaf b) = showBDD'' (Leaf b)
 showBDD' (Node x l r) = x ++ "->" ++ (getValue l) ++ "\n" ++ x ++ "=>" ++ (getValue r) ++ "\n" ++ (showBDD' l) ++ (showBDD' r)
 showBDD' (Leaf b) = ""
 
-showBDD'' (Leaf b) = show $ boolToInt b
+showBDD'' (Leaf b) = (show $ boolToInt b) ++ "\n"
 
 main = do
     [command, file] <- getArgs
