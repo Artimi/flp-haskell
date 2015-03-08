@@ -58,31 +58,19 @@ processCommand command formula
     | command == "-v" = show $ getVariables formula
     | command == "-b" = showBDD $ getBDD formula
     | command == "-t" = unwords (getVariables formula) ++ "\n" ++ (showTable $ getTruthTable formula)
+    | command == "-r" = showBDD $  reduceBDD $ getBDD formula
     | otherwise = "Unknown command: " ++ command
 
 
 -- | data structure for Binary decision diagram
 data BDD a = Leaf Bool | Node a (BDD a) (BDD a) deriving (Show, Eq)
-data Crumb a = LeftCrumb a (BDD a) | RightCrumb a (BDD a) deriving (Show)
-type Breadcrumbs a = [Crumb a]
-type Zipper a = (BDD a, Breadcrumbs a)
 
-goLeft :: (BDD a, Breadcrumbs a) -> (BDD a, Breadcrumbs a)
-goLeft (Node x l r, bs) = (l, LeftCrumb x r:bs)
-
-goRight :: (BDD a, Breadcrumbs a) -> (BDD a, Breadcrumbs a)
-goRight (Node x l r, bs) = (r, LeftCrumb x l:bs)
-
-goUp :: (BDD a, Breadcrumbs a) -> (BDD a, Breadcrumbs a)
-goUp (t, LeftCrumb x r:bs) = (Node x t r, bs)
-goUp (t, RightCrumb x l:bs) = (Node x l t, bs)
-
-bddTo :: [Int] -> Zipper a -> Zipper a
-bddTo [] zp@(Leaf b, bs) = zp
-bddTo [] zp@(Node x l r, bs) = zp
-bddTo (d:ds) zp@(Node x l r, bs) = if d == 0
-                                    then bddTo ds (goLeft zp)
-                                    else bddTo ds (goRight zp)
+-- | Reduce Ordered BDD to ROBDD
+reduceBDD :: (Eq a) => BDD a -> BDD a
+reduceBDD (Node x l r)
+    | l == r = reduceBDD l
+    | l /= r = (Node x (reduceBDD l) (reduceBDD r))
+reduceBDD self@(Leaf b) = self
 
 -- | Set leaf under path [Int] of bdd to new_value
 setLeaf :: [Int] -> BDD a -> Bool -> BDD a
