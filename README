@@ -24,11 +24,15 @@ Usage
 -b - print BDD
 -r - print ROBDD
 
-extra:
+extra options:
 -v - print variables used in formula
 -c - check whether generated BDD and ROBDD correspond to truth table
-```
 
+apply function:
+./formula-2-bdd OPERATION DNF_FILE1 DNF_FILE2
+
+Run apply with OPERATION = ["||","&&"] on ROBDDs from DNF_FILE1 DNF_FILE2
+```
 
 Print BDD/ROBDD
 ---------------
@@ -40,6 +44,24 @@ a=>b=>1
 ```
 For ROBDD where `a` leads via `low` to 0, via `high` to `b` and `b` lead via `low` to
 0 and via `high` to 1. If is whole BDD reduced to 0 or 1 is printed out only this value.
+
+Extra
+-----
+I decided to implement function Apply (FAV lecture 4 page 15). BDDs are reduced
+then the operation is applied to them and resulting ROBDD is printed to output.
+Available operations are `or`: "||" and `and`: "&&".
+
+Example of run:
+```
+$ ./formula-2-bdd "||" tests/v1.dnf tests/v2.dnf
+a->b->0
+a->b=>1
+a=>b->1
+a=>b=>0
+
+./formula-2-bdd "&&" tests/v1.dnf tests/v2.dnf
+0
+```
 
 Tests
 -----

@@ -124,6 +124,20 @@ check formula = equivalent bdd tt variables && equivalent rbdd tt variables
           tt = getTruthTable formula
           variables = getVariables formula
 
+-- | Apply operation op on two bdds
+-- | assume variables are in alphabet order
+apply :: (Bool -> Bool -> Bool) -> BDD String -> BDD String -> BDD String
+apply op b1 b2 = reduceBDD $ applyFrom op b1 b2
+
+applyFrom :: (Bool -> Bool -> Bool) -> BDD String -> BDD String -> BDD String
+applyFrom op (Leaf b1) (Leaf b2) = (Leaf $ op b1 b2)
+applyFrom op n1@(Node x1 l1 r1) n2@(Leaf b2) = (Node x1 (applyFrom op l1 n2) (applyFrom op r1 n2))
+applyFrom op n1@(Leaf b1) n2@(Node x2 l2 r2) = (Node x2 (applyFrom op n1 l2) (applyFrom op n1 r2))
+applyFrom op n1@(Node x1 l1 r1) n2@(Node x2 l2 r2) = case compare x1 x2 of
+    EQ -> (Node x1 (applyFrom op l1 l2) (applyFrom op r1 r2))
+    LT -> (Node x1 (applyFrom op l1 n2) (applyFrom op r1 n2))
+    GT -> (Node x2 (applyFrom op n1 l2) (applyFrom op n1 r2))
+
 --------------------------------------------------------------------------------
 -- | runs command on formula
 processCommand :: String -> Formula -> String
@@ -136,8 +150,42 @@ processCommand command formula
     | command == "-c" = (show $ check formula) ++ "\n"
     | otherwise = "Unknown command: " ++ command
 
+processApply :: String -> Formula -> Formula -> String
+processApply operation f1 f2 = let
+                        b1 = (reduceBDD $ getBDD f1)
+                        b2 = (reduceBDD $ getBDD f2)
+                    in case operation of
+                                    "||" -> showBDD $ apply (||) b1 b2
+                                    "&&" -> showBDD $ apply (&&) b1 b2
+                                    op -> error "Unknown operation: " ++ op ++ "\n"
+
+help :: String
+help = " ./formula-2-bdd [-i | -v | -b | -t | -r | -c] DNF_FILE\n \
+\ \n \
+\ -i - print DNF representation\n \
+\ -t - print truth table\n \
+\ -b - print BDD\n \
+\ -r - print ROBDD\n \
+\ \n \
+\ extra options:\n \
+\ -v - print variables used in formula\n \
+\ -c - check whether generated BDD and ROBDD correspond to truth table\n \
+\ \n \
+\ apply function:\n \
+\ ./formula-2-bdd OPERATION DNF_FILE1 DNF_FILE2\n \
+\ \n \
+\ Run apply with OPERATION = [\"||\",\"&&\"] on ROBDDs from DNF_FILE1 DNF_FILE2\n"
+
 main = do
-    [command, file] <- getArgs
-    formula <- getFormula file
-    let result = processCommand command formula
-    putStr result
+    args <- getArgs
+    case args of
+        [command, file] -> do
+                        formula <- getFormula file
+                        let result = processCommand command formula
+                        putStr result
+        [operation, file1, file2] -> do
+                                formula1 <- getFormula file1
+                                formula2 <- getFormula file2
+                                let result = processApply operation formula1 formula2
+                                putStr result
+        _ -> putStr help
